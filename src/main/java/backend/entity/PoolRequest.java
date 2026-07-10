@@ -23,6 +23,6 @@ public class PoolRequest {
     private LocalDateTime expectedArrivalTime;
     private String status = "PENDING";
 
-    
+    // Stores the unique group ID assigned to matched students for the chat room
     private String groupId;
 }
