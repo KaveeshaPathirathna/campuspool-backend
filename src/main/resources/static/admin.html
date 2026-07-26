@@ -1,0 +1,272 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TukPool - Admin Dashboard</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        body { background-color: #f4f6f9; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+        .sidebar { height: 100vh; background: #1e293b; color: white; position: fixed; width: 240px; padding-top: 20px; display: flex; flex-direction: column; justify-content: space-between; }
+        .sidebar a { color: #cbd5e1; text-decoration: none; padding: 12px 20px; display: block; font-weight: 500; }
+        .sidebar a:hover, .sidebar a.active { background: #0f172a; color: #38bdf8; border-left: 4px solid #38bdf8; }
+        .main-content { margin-left: 240px; padding: 30px; }
+        .stat-card { border: none; border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); }
+    </style>
+</head>
+<body>
+
+<!-- Sidebar -->
+<div class="sidebar">
+    <div>
+        <h3 class="text-center fw-bold text-info mb-1">🛺 TukPool</h3>
+        <p class="text-muted small text-center mb-4">ADMIN PORTAL</p>
+        <hr class="border-secondary">
+        <a href="#stats-section" class="active"><i class="fa-solid fa-chart-line me-2"></i> Dashboard</a>
+        <a href="#students-section"><i class="fa-solid fa-user-graduate me-2"></i> Registered Students</a>
+        <a href="#pools-section"><i class="fa-solid fa-car-side me-2"></i> Pool Requests</a>
+    </div>
+    <div class="p-3">
+        <button class="btn btn-outline-danger w-100 btn-sm" onclick="logout()"><i class="fa-solid fa-right-from-bracket me-1"></i> Logout</button>
+    </div>
+</div>
+
+<!-- Main Content -->
+<div class="main-content">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2>Admin Dashboard</h2>
+        <button class="btn btn-primary btn-sm" onclick="loadAdminData()"><i class="fa-solid fa-rotate-right me-1"></i> Refresh Data</button>
+    </div>
+
+    <!-- Dashboard Stats Cards -->
+    <div class="row g-4 mb-5" id="stats-section">
+        <div class="col-md-4">
+            <div class="card stat-card bg-white p-3">
+                <div class="d-flex align-items-center">
+                    <div class="rounded-circle bg-primary bg-opacity-10 p-3 me-3 text-primary">
+                        <i class="fa-solid fa-users fa-2x"></i>
+                    </div>
+                    <div>
+                        <h6 class="text-muted mb-1">Total Students</h6>
+                        <h3 class="fw-bold mb-0" id="totalStudentsCount">0</h3>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-4">
+            <div class="card stat-card bg-white p-3">
+                <div class="d-flex align-items-center">
+                    <div class="rounded-circle bg-success bg-opacity-10 p-3 me-3 text-success">
+                        <i class="fa-solid fa-user-check fa-2x"></i>
+                    </div>
+                    <div>
+                        <h6 class="text-muted mb-1">Friend Connections</h6>
+                        <h3 class="fw-bold mb-0" id="totalFriendsCount">0</h3>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-4">
+            <div class="card stat-card bg-white p-3">
+                <div class="d-flex align-items-center">
+                    <div class="rounded-circle bg-warning bg-opacity-10 p-3 me-3 text-warning">
+                        <i class="fa-solid fa-route fa-2x"></i>
+                    </div>
+                    <div>
+                        <h6 class="text-muted mb-1">Pool Requests</h6>
+                        <h3 class="fw-bold mb-0" id="totalPoolsCount">0</h3>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Registered Students Table -->
+    <div class="card border-0 shadow-sm rounded-3 mb-5" id="students-section">
+        <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
+            <h5 class="fw-bold mb-0">Registered Campus Students</h5>
+            <input type="text" id="searchInput" class="form-control form-control-sm w-25" placeholder="🔍 Search student..." onkeyup="filterStudents()">
+        </div>
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0" id="studentsTable">
+                    <thead class="table-light">
+                    <tr>
+                        <th>Student ID</th>
+                        <th>Name</th>
+                        <th>Campus Mail</th>
+                        <th>Faculty</th>
+                        <th>Gender</th>
+                        <th class="text-center">Action</th>
+                    </tr>
+                    </thead>
+                    <tbody id="studentsTableBody">
+                    <tr><td colspan="6" class="text-center py-4 text-muted">Loading data...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Active Ride/Pool Requests Table -->
+    <div class="card border-0 shadow-sm rounded-3" id="pools-section">
+        <div class="card-header bg-white py-3">
+            <h5 class="fw-bold mb-0">Active Pool Requests & Groups</h5>
+        </div>
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead class="table-light">
+                    <tr>
+                        <th>Request ID</th>
+                        <th>Student ID</th>
+                        <th>Pickup Location</th>
+                        <th>Destination</th>
+                        <th>Time</th>
+                        <th>Status</th>
+                        <th class="text-center">Action</th>
+                    </tr>
+                    </thead>
+                    <tbody id="poolsTableBody">
+                    <tr><td colspan="7" class="text-center py-4 text-muted">Loading ride requests...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- JavaScript Engine -->
+<script>
+    // ✅ 1. Check Authentication First
+    if (localStorage.getItem("adminLoggedIn") !== "true") {
+        window.location.href = "admin-login.html";
+    }
+
+    const API_BASE_URL = "http://localhost:8081/api/admin";
+
+    async function loadAdminData() {
+        // Fetch Dashboard Stats
+        try {
+            const res = await fetch(`${API_BASE_URL}/stats`);
+            if (res.ok) {
+                const data = await res.json();
+                document.getElementById("totalStudentsCount").innerText = data.totalStudents || 0;
+                document.getElementById("totalFriendsCount").innerText = data.totalFriendConnections || 0;
+                document.getElementById("totalPoolsCount").innerText = data.totalPoolRequests || 0;
+            }
+        } catch (e) { console.error(e); }
+
+        // Fetch Students List
+        try {
+            const res = await fetch(`${API_BASE_URL}/students`);
+            if (res.ok) {
+                const students = await res.json();
+                const tbody = document.getElementById("studentsTableBody");
+                tbody.innerHTML = "";
+
+                if (students.length === 0) {
+                    tbody.innerHTML = `<tr><td colspan="6" class="text-center py-4 text-muted">No students found.</td></tr>`;
+                } else {
+                    students.forEach(s => {
+                        tbody.innerHTML += `
+                                <tr>
+                                    <td class="fw-bold text-primary">${s.studentId || 'N/A'}</td>
+                                    <td>${s.name || 'N/A'}</td>
+                                    <td>${s.campusMail || 'N/A'}</td>
+                                    <td><span class="badge bg-secondary">${s.faculty || 'General'}</span></td>
+                                    <td>${s.gender || 'N/A'}</td>
+                                    <td class="text-center">
+                                        <button class="btn btn-danger btn-sm" onclick="deleteStudent('${s.studentId}')">
+                                            <i class="fa-solid fa-trash"></i> Delete
+                                        </button>
+                                    </td>
+                                </tr>
+                            `;
+                    });
+                }
+            }
+        } catch (e) { console.error(e); }
+
+        // Fetch Pool Requests
+        try {
+            const res = await fetch(`${API_BASE_URL}/pools`);
+            if (res.ok) {
+                const pools = await res.json();
+                const tbody = document.getElementById("poolsTableBody");
+                tbody.innerHTML = "";
+
+                if (pools.length === 0) {
+                    tbody.innerHTML = `<tr><td colspan="7" class="text-center py-4 text-muted">No pool requests found.</td></tr>`;
+                } else {
+                    pools.forEach(p => {
+                        tbody.innerHTML += `
+                                <tr>
+                                    <td>#${p.id}</td>
+                                    <td class="fw-bold">${p.studentId || 'N/A'}</td>
+                                    <td>${p.pickupLocation || 'N/A'}</td>
+                                    <td>${p.destination || 'N/A'}</td>
+                                    <td>${p.departureTime || 'N/A'}</td>
+                                    <td><span class="badge bg-info">${p.status || 'ACTIVE'}</span></td>
+                                    <td class="text-center">
+                                        <button class="btn btn-danger btn-sm" onclick="deletePool(${p.id})">
+                                            <i class="fa-solid fa-trash"></i> Delete
+                                        </button>
+                                    </td>
+                                </tr>
+                            `;
+                    });
+                }
+            }
+        } catch (e) { console.error(e); }
+    }
+
+    // Delete Student Function
+    async function deleteStudent(studentId) {
+        if (confirm(`Are you sure you want to delete student: ${studentId}?`)) {
+            try {
+                const res = await fetch(`${API_BASE_URL}/students/${studentId}`, { method: 'DELETE' });
+                if (res.ok) {
+                    alert("Student removed successfully!");
+                    loadAdminData();
+                } else { alert("Failed to delete student."); }
+            } catch (e) { alert("Error deleting student."); }
+        }
+    }
+
+    // Delete Pool Request / Group Function
+    async function deletePool(requestId) {
+        if (confirm(`Are you sure you want to delete Pool Request #${requestId}?`)) {
+            try {
+                const res = await fetch(`${API_BASE_URL}/pools/${requestId}`, { method: 'DELETE' });
+                if (res.ok) {
+                    alert("Pool Request deleted successfully!");
+                    loadAdminData();
+                } else { alert("Failed to delete pool request."); }
+            } catch (e) { alert("Error deleting pool request."); }
+        }
+    }
+
+    // Logout Function
+    function logout() {
+        localStorage.removeItem("adminLoggedIn");
+        window.location.href = "admin-login.html";
+    }
+
+    // Search Filter Logic
+    function filterStudents() {
+        let input = document.getElementById("searchInput").value.toLowerCase();
+        let rows = document.querySelectorAll("#studentsTableBody tr");
+        rows.forEach(row => {
+            let text = row.innerText.toLowerCase();
+            row.style.display = text.includes(input) ? "" : "none";
+        });
+    }
+
+    window.onload = loadAdminData;
+</script>
+</body>
+</html>

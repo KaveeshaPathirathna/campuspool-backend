@@ -6,6 +6,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
+import java.util.Optional;
 
 @Service
 public class StudentService {
@@ -13,16 +14,28 @@ public class StudentService {
     @Autowired
     private StudentRepository studentRepository;
 
-    // 1. Register a new student (Save Student)
+    // Student Registration
     public Student registerStudent(Student student) {
-        // Check the campus email domain validation rule here
-        if (!student.getCampusMail().endsWith(".ac.lk")) {
-            throw new IllegalArgumentException("Invalid email address! Please use a valid campus email (.ac.lk).");
-        }
         return studentRepository.save(student);
     }
 
-    // 2. Get the list of all students (Get All Students)
+    // 🔑 Student Login Method (This fixes your error!)
+    public Student loginStudent(String email, String password) {
+        Optional<Student> studentOpt = studentRepository.findByCampusMail(email);
+
+        if (studentOpt.isPresent()) {
+            Student student = studentOpt.get();
+            // Check password match
+            if (student.getPassword().equals(password)) {
+                return student;
+            }
+        }
+
+        // Throws exception if email not found or password incorrect
+        throw new IllegalArgumentException("Invalid email or password");
+    }
+
+    // Get All Students
     public List<Student> getAllStudents() {
         return studentRepository.findAll();
     }
