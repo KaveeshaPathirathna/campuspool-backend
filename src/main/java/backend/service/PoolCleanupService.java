@@ -19,7 +19,6 @@ public class PoolCleanupService {
     @Transactional
     public void deleteExpiredPoolRequests() {
         LocalDateTime cutOffTime = LocalDateTime.now().minusHours(12);
-        poolRequestRepository.deleteByCreatedAtBefore(cutOffTime);
-        System.out.println("Auto-deleted pool requests created before: " + cutOffTime);
+        poolRequestRepository.deleteByTimeBefore(cutOffTime);
     }
 }

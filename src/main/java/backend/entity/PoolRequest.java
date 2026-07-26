@@ -14,34 +14,37 @@ public class PoolRequest {
 
     private String pickupLocation;
 
-    // Fix: Map the dropLocation field directly to the 'destination' column in MySQL
     @Column(name = "destination")
-    private String dropLocation;
+    private String destination;
 
     private int totalSeats;
     private int filledSeats;
     private String note;
     private String genderRestriction; // "Female Only", "Any", etc.
 
-    // Fix 1: Map 'time' field to 'request_time' column to avoid MySQL reserved keyword conflict
-    // Fix 2: Convert ISO Date/Time string from Flutter into Java LocalDateTime
     @Column(name = "request_time")
     @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd'T'HH:mm:ss")
     private LocalDateTime time;
 
-    // Default Constructor (Required by JPA)
+    // Added Student Relationship
+    @ManyToOne
+    @JoinColumn(name = "student_id")
+    private Student student;
+
+    // Default Constructor
     public PoolRequest() {
     }
 
-    public PoolRequest(Long id, String pickupLocation, String dropLocation, int totalSeats, int filledSeats, String note, String genderRestriction, LocalDateTime time) {
+    public PoolRequest(Long id, String pickupLocation, String destination, int totalSeats, int filledSeats, String note, String genderRestriction, LocalDateTime time, Student student) {
         this.id = id;
         this.pickupLocation = pickupLocation;
-        this.dropLocation = dropLocation;
+        this.destination = destination;
         this.totalSeats = totalSeats;
         this.filledSeats = filledSeats;
         this.note = note;
         this.genderRestriction = genderRestriction;
         this.time = time;
+        this.student = student;
     }
 
     // Getters and Setters
@@ -51,8 +54,11 @@ public class PoolRequest {
     public String getPickupLocation() { return pickupLocation; }
     public void setPickupLocation(String pickupLocation) { this.pickupLocation = pickupLocation; }
 
-    public String getDropLocation() { return dropLocation; }
-    public void setDropLocation(String dropLocation) { this.dropLocation = dropLocation; }
+    public String getDestination() { return destination; }
+    public void setDestination(String destination) { this.destination = destination; }
+
+    public String getDropLocation() { return destination; }
+    public void setDropLocation(String dropLocation) { this.destination = dropLocation; }
 
     public int getTotalSeats() { return totalSeats; }
     public void setTotalSeats(int totalSeats) { this.totalSeats = totalSeats; }
@@ -68,4 +74,8 @@ public class PoolRequest {
 
     public LocalDateTime getTime() { return time; }
     public void setTime(LocalDateTime time) { this.time = time; }
+
+    // Getters and Setters for Student
+    public Student getStudent() { return student; }
+    public void setStudent(Student student) { this.student = student; }
 }

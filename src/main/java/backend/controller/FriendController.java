@@ -24,38 +24,54 @@ public class FriendController {
     private StudentRepository studentRepository;
 
     /**
-     * 1. Add a new friend connection directly (Instant ACCEPTED)
+     * 1. Add a new friend connection directly (Bidirectional - Save both directions)
      */
     @PostMapping("/add")
+    @Transactional
     public ResponseEntity<?> addFriend(@RequestBody Map<String, String> payload) {
         try {
             String userStudentId = payload.get("userStudentId");
             String friendStudentId = payload.get("friendStudentId");
 
-            if (userStudentId == null || friendStudentId == null) {
+            if (userStudentId == null || friendStudentId == null ||
+                    userStudentId.trim().isEmpty() || friendStudentId.trim().isEmpty()) {
                 return ResponseEntity.badRequest().body("Both student IDs are required");
             }
 
-            if (userStudentId.equals(friendStudentId)) {
+            userStudentId = userStudentId.trim();
+            friendStudentId = friendStudentId.trim();
+
+            if (userStudentId.equalsIgnoreCase(friendStudentId)) {
                 return ResponseEntity.badRequest().body("You cannot add yourself as a friend");
             }
 
-            // Check if friend relationship already exists
-            boolean alreadyFriends = friendRepository.existsByUserStudentIdAndFriendStudentId(userStudentId, friendStudentId);
+            // Check if friend relationship already exists in either direction
+            boolean alreadyFriends = friendRepository.existsByUserStudentIdAndFriendStudentId(userStudentId, friendStudentId)
+                    || friendRepository.existsByUserStudentIdAndFriendStudentId(friendStudentId, userStudentId);
+
             if (alreadyFriends) {
                 return ResponseEntity.badRequest().body("Already added as a friend");
             }
 
-            Friend friend = new Friend();
-            friend.setUserStudentId(userStudentId);
-            friend.setFriendStudentId(friendStudentId);
-            friend.setStatus("ACCEPTED"); // Direct ACCEPTED
+            // 1️⃣ Save relation User -> Friend
+            Friend friend1 = new Friend();
+            friend1.setUserStudentId(userStudentId);
+            friend1.setFriendStudentId(friendStudentId);
+            friend1.setStatus("ACCEPTED");
+            friendRepository.save(friend1);
 
-            friendRepository.save(friend);
+            // 2️⃣ Save reverse relation Friend -> User (so both users see each other after login)
+            Friend friend2 = new Friend();
+            friend2.setUserStudentId(friendStudentId);
+            friend2.setFriendStudentId(userStudentId);
+            friend2.setStatus("ACCEPTED");
+            friendRepository.save(friend2);
+
             return new ResponseEntity<>("Friend added successfully", HttpStatus.CREATED);
 
         } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Error: " + e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body("Error adding friend: " + e.getMessage());
         }
     }
 
@@ -64,7 +80,12 @@ public class FriendController {
      */
     @GetMapping("/{studentId}")
     public ResponseEntity<List<Map<String, Object>>> getFriendsWithDetails(@PathVariable String studentId) {
-        List<Friend> friends = friendRepository.findByUserStudentIdAndStatus(studentId, "ACCEPTED");
+        if (studentId == null || studentId.trim().isEmpty()) {
+            return ResponseEntity.badRequest().build();
+        }
+
+        String cleanStudentId = studentId.trim();
+        List<Friend> friends = friendRepository.findByUserStudentIdAndStatus(cleanStudentId, "ACCEPTED");
         List<Map<String, Object>> responseList = new ArrayList<>();
 
         for (Friend f : friends) {
@@ -90,31 +111,44 @@ public class FriendController {
      */
     @GetMapping("/count/{studentId}")
     public ResponseEntity<Long> getFriendCount(@PathVariable String studentId) {
-        long count = friendRepository.countByUserStudentIdAndStatus(studentId, "ACCEPTED");
+        if (studentId == null || studentId.trim().isEmpty()) {
+            return ResponseEntity.ok(0L);
+        }
+        long count = friendRepository.countByUserStudentIdAndStatus(studentId.trim(), "ACCEPTED");
         return ResponseEntity.ok(count);
     }
 
     /**
-     * 4. Remove / Unfriend Endpoint
+     * 4. Remove / Unfriend Endpoint (Deletes relationship in both directions)
      */
     @DeleteMapping("/remove")
     @Transactional
     public ResponseEntity<?> removeFriend(@RequestParam String userStudentId, @RequestParam String friendStudentId) {
         try {
-            Optional<Friend> rel1 = friendRepository.findByUserStudentIdAndFriendStudentId(userStudentId, friendStudentId);
-            Optional<Friend> rel2 = friendRepository.findByUserStudentIdAndFriendStudentId(friendStudentId, userStudentId);
+            String cleanUser = userStudentId.trim();
+            String cleanFriend = friendStudentId.trim();
 
+            Optional<Friend> rel1 = friendRepository.findByUserStudentIdAndFriendStudentId(cleanUser, cleanFriend);
+            Optional<Friend> rel2 = friendRepository.findByUserStudentIdAndFriendStudentId(cleanFriend, cleanUser);
+
+            boolean removed = false;
             if (rel1.isPresent()) {
                 friendRepository.delete(rel1.get());
-                return ResponseEntity.ok("Friend removed successfully");
-            } else if (rel2.isPresent()) {
+                removed = true;
+            }
+            if (rel2.isPresent()) {
                 friendRepository.delete(rel2.get());
+                removed = true;
+            }
+
+            if (removed) {
                 return ResponseEntity.ok("Friend removed successfully");
             }
 
             return ResponseEntity.badRequest().body("Friend relationship not found");
         } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Error: " + e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body("Error removing friend: " + e.getMessage());
         }
     }
 }

@@ -24,4 +24,23 @@ public class PoolRequestService {
     public List<PoolRequest> getAllRequests() {
         return poolRequestRepository.findAll();
     }
+
+    // Auto Matching Suggestion Logic
+    public List<PoolRequest> getSuggestedPools(String pickup, String destination, LocalDateTime requestTime, String currentStudentId) {
+        if (requestTime == null) {
+            requestTime = LocalDateTime.now();
+        }
+
+        // Find matching groups within a 30-minute time window before and after
+        LocalDateTime startTime = requestTime.minusMinutes(30);
+        LocalDateTime endTime = requestTime.plusMinutes(30);
+
+        return poolRequestRepository.findMatchingPools(
+                pickup,
+                destination,
+                startTime,
+                endTime,
+                currentStudentId
+        );
+    }
 }
